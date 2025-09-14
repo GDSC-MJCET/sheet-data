@@ -1,6 +1,6 @@
 import { Student, ApiResponse } from '@/types/student';
 
-const API_BASE_URL = 'https://api.gdgcmjcet.in';
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 
 export class ApiService {
   static async fetchApplications(): Promise<Student[]> {
