@@ -21,7 +21,7 @@ const PasswordProtection = ({ onAuthenticated }: PasswordProtectionProps) => {
     setError("");
 
     // Simulate password check - in a real app, this would be more secure
-    const correctPassword = "admin123"; // This should come from env in a real app
+    const correctPassword = import.meta.env.VITE_PASSWORD; // This should come from env in a real app
     
     setTimeout(() => {
       if (password === correctPassword) {
