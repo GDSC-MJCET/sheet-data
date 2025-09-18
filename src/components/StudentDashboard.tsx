@@ -5,7 +5,16 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Search, Users, Filter, Code, Smartphone, Shield, Brain, Cloud, Palette, Users2, Camera, Brush, Megaphone, FileText, MessageSquare, Truck, Wrench } from "lucide-react";
+import { Search, Users, Filter, Code, Smartphone, Shield, Brain, Cloud, Palette, Users2, Camera, Brush, Megaphone, FileText, MessageSquare, Truck, Wrench, Download, ChevronDown } from "lucide-react";
+import { convertStudentsToCSV, downloadCSV, filterStudentsForDownload, generateFilename } from "@/lib/csvUtils";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
+} from "@/components/ui/dropdown-menu";
 
 interface StudentDashboardProps {
   students: Student[];
@@ -19,7 +28,7 @@ const PORTFOLIO_TYPES = {
   cloud: { name: "Cloud Computing", icon: Cloud, color: "bg-sky-500" },
   uiux: { name: "UI/UX Design", icon: Palette, color: "bg-pink-500" },
   hr: { name: "Human Resources", icon: Users2, color: "bg-orange-500" },
-  media: { name: "Media & Content", icon: Camera, color: "bg-yellow-500" },
+  media: { name: "Media & Content", icon: Camera, color: "bg-pink-500" },
   design: { name: "Graphic Design", icon: Brush, color: "bg-indigo-500" },
   marketing: { name: "Marketing", icon: Megaphone, color: "bg-teal-500" },
   doc: { name: "Documentation & Editorial", icon: FileText, color: "bg-gray-500" },
@@ -31,6 +40,13 @@ const PORTFOLIO_TYPES = {
 const StudentDashboard = ({ students }: StudentDashboardProps) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [portfolioFilter, setPortfolioFilter] = useState<string>("ALL");
+
+  const handleDownloadCSV = (filterType: 'all' | 'hr' | 'app' | 'portfolio', portfolioType?: string) => {
+    const filteredData = filterStudentsForDownload(students, filterType, portfolioType);
+    const csvContent = convertStudentsToCSV(filteredData);
+    const filename = generateFilename(filterType, portfolioType, filteredData.length);
+    downloadCSV(csvContent, filename);
+  };
 
   const stats = useMemo(() => {
     const total = students.length;
@@ -62,7 +78,7 @@ const StudentDashboard = ({ students }: StudentDashboardProps) => {
   }, [students, searchTerm, portfolioFilter]);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen ">
       <div className="border-b bg-card">
         <div className="container mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
@@ -72,11 +88,56 @@ const StudentDashboard = ({ students }: StudentDashboardProps) => {
                 Manage and review student applications
               </p>
             </div>
-            <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">
-                {filteredStudents.length} of {students.length} students
-              </span>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <Filter className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm text-muted-foreground">
+                  {filteredStudents.length} of {students.length} students
+                </span>
+              </div>
+              
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="flex items-center gap-2">
+                    <Download className="h-4 w-4" />
+                    Download CSV
+                    <ChevronDown className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>Download Options</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => handleDownloadCSV('all')}>
+                    <Download className="h-4 w-4 mr-2" />
+                    All Students ({students.length})
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleDownloadCSV('hr')}>
+                    <Users2 className="h-4 w-4 mr-2" />
+                    HR Applications ({stats.portfolioCounts.hr || 0})
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleDownloadCSV('app')}>
+                    <Smartphone className="h-4 w-4 mr-2" />
+                    App Development ({stats.portfolioCounts.app || 0})
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuLabel>By Portfolio Type</DropdownMenuLabel>
+                  {Object.entries(PORTFOLIO_TYPES).map(([key, portfolio]) => {
+                    const count = stats.portfolioCounts[key] || 0;
+                    if (count === 0) return null;
+                    
+                    const IconComponent = portfolio.icon;
+                    return (
+                      <DropdownMenuItem 
+                        key={key} 
+                        onClick={() => handleDownloadCSV('portfolio', key)}
+                      >
+                        <IconComponent className="h-4 w-4 mr-2" />
+                        {portfolio.name} ({count})
+                      </DropdownMenuItem>
+                    );
+                  })}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </div>
